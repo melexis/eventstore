@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.melexis.util.DateTimeHelper;
 import org.joda.time.DateTime;
 
+import javax.xml.bind.annotation.XmlElementRef;
 import java.util.*;
 
 
@@ -84,15 +85,15 @@ public class EventServiceImpl implements EventService {
     }
 
     public List<Event> findEvents(Collection<String> sources, DateTime from, DateTime till) {
-        return null;
+        return findEvents(sources, from, till, DEFAULT_LIMIT);
     }
 
     public List<Event> findEvents(Collection<String> sources, Date from, Date till) {
-        return null;
+        return findEvents(sources, new DateTime(from), new DateTime(till), DEFAULT_LIMIT);
     }
 
     public List<Event> findEvents(Collection<String> sources, String isoFrom, String isoTill) {
-        return null;
+        return findEvents(sources, new DateTime(isoFrom), new DateTime(isoTill), DEFAULT_LIMIT);
     }
 
     public List<Event> findEvents(Collection<String> sources, DateTime from, DateTime till, int limit) {
@@ -100,15 +101,15 @@ public class EventServiceImpl implements EventService {
         for(String source : sources) {
             events.addAll(findEvents(source,from,till,limit));
         }
-        return ImmutableList.copyOf(events);
+        return ImmutableList.copyOf(events).subList(0,Math.min(events.size(),limit));
     }
 
     public List<Event> findEvents(Collection<String> sources, Date from, Date till, int limit) {
-        return null;
+        return findEvents(sources, new DateTime(from), new DateTime(till), limit);
     }
 
     public List<Event> findEvents(Collection<String> sources, String isoFrom, String isoTill, int limit) {
-        return null;
+        return findEvents(sources, new DateTime(isoFrom), new DateTime(isoTill), limit);
     }
 
 }

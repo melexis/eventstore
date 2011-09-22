@@ -178,16 +178,99 @@ public class EventServiceImplTest {
 
     @Test
     public void testFindEventsForSources() {
-        when(eventDao.findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, NR_LIMIT)).thenReturn(eventList1);
-        when(eventDao.findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, NR_LIMIT)).thenReturn(eventList2);
-        when(eventDao.findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, NR_LIMIT)).thenReturn(eventList3);
+        when(eventDao.findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT)).thenReturn(eventList1);
+        when(eventDao.findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT)).thenReturn(eventList2);
+        when(eventDao.findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT)).thenReturn(eventList3);
 
-        List<Event> result = eventService.findEvents(sources, TEST_TS_START, TEST_TS_END, NR_LIMIT);
+        List<Event> result = eventService.findEvents(sources, TEST_TS_START, TEST_TS_END);
 
-        verify(eventDao).findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, NR_LIMIT);
-        verify(eventDao).findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, NR_LIMIT);
-        verify(eventDao).findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, NR_LIMIT);
+        verify(eventDao).findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT);
+        verify(eventDao).findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT);
+        verify(eventDao).findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT);
 
         assertEquals(eventListSummed, result);
     }
+
+    @Test
+    public void testFindEventsForSourcesWithLimit() {
+        int max = 3;
+        when(eventDao.findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, max)).thenReturn(eventList1);
+        when(eventDao.findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, max)).thenReturn(eventList2);
+        when(eventDao.findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, max)).thenReturn(eventList3);
+
+        List<Event> result = eventService.findEvents(sources, TEST_TS_START, TEST_TS_END, max);
+
+        verify(eventDao).findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, max);
+        verify(eventDao).findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, max);
+        verify(eventDao).findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, max);
+
+        assertEquals(3,result.size());
+        assertEquals(eventListSummed.subList(0,3), result);
+    }
+
+    @Test
+    public void testFindEventsForSourcesWithDates() {
+        when(eventDao.findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT)).thenReturn(eventList1);
+        when(eventDao.findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT)).thenReturn(eventList2);
+        when(eventDao.findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT)).thenReturn(eventList3);
+
+        List<Event> result = eventService.findEvents(sources, TEST_TS_START.toDate(), TEST_TS_END.toDate());
+
+        verify(eventDao).findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT);
+        verify(eventDao).findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT);
+        verify(eventDao).findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT);
+
+        assertEquals(eventListSummed, result);
+    }
+
+    @Test
+     public void testFindEventsForSourcesWithDatesAndLimit() {
+         int max = 3;
+         when(eventDao.findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, max)).thenReturn(eventList1);
+         when(eventDao.findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, max)).thenReturn(eventList2);
+         when(eventDao.findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, max)).thenReturn(eventList3);
+
+         List<Event> result = eventService.findEvents(sources, TEST_TS_START.toDate(), TEST_TS_END.toDate(), max);
+
+         verify(eventDao).findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, max);
+         verify(eventDao).findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, max);
+         verify(eventDao).findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, max);
+
+         assertEquals(3,result.size());
+         assertEquals(eventListSummed.subList(0,3), result);
+     }
+
+    @Test
+    public void testFindEventsForSourcesWithIsoDates() {
+        when(eventDao.findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT)).thenReturn(eventList1);
+        when(eventDao.findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT)).thenReturn(eventList2);
+        when(eventDao.findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT)).thenReturn(eventList3);
+
+        List<Event> result = eventService.findEvents(sources, TEST_TS_START.toString(), TEST_TS_END.toString());
+
+        verify(eventDao).findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT);
+        verify(eventDao).findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT);
+        verify(eventDao).findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, DEFAULT_LIMIT);
+
+        assertEquals(eventListSummed, result);
+    }
+
+    @Test
+     public void testFindEventsForSourcesWithIsoDatesAndLimit() {
+         int max = 3;
+         when(eventDao.findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, max)).thenReturn(eventList1);
+         when(eventDao.findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, max)).thenReturn(eventList2);
+         when(eventDao.findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, max)).thenReturn(eventList3);
+
+         List<Event> result = eventService.findEvents(sources, TEST_TS_START.toString(), TEST_TS_END.toString(), max);
+
+         verify(eventDao).findEvents(TEST_SOURCE_1, TEST_TS_START, TEST_TS_END, max);
+         verify(eventDao).findEvents(TEST_SOURCE_2, TEST_TS_START, TEST_TS_END, max);
+         verify(eventDao).findEvents(TEST_SOURCE_3, TEST_TS_START, TEST_TS_END, max);
+
+         assertEquals(3,result.size());
+         assertEquals(eventListSummed.subList(0,3), result);
+     }
+
+
 }
