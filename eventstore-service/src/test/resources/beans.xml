@@ -5,7 +5,8 @@
 
     <bean id="cassandraHostConfigurator"
           class="me.prettyprint.cassandra.service.CassandraHostConfigurator">
-        <constructor-arg value="localhost:19170"/>
+        <!--<constructor-arg value="192.168.122.177:9160"/>-->
+        <constructor-arg value="127.0.0.1:19170"/>
     </bean>
 
     <bean id="cluster" class="me.prettyprint.cassandra.service.ThriftCluster">
@@ -19,7 +20,7 @@
         <constructor-arg ref="cluster"/>
     </bean>
 
-    <bean id="eventDao" class="com.melexis.esb.EventDaoCassandraImpl">
+    <bean id="eventDao" class="com.melexis.esb.eventstore.impl.EventDaoCassandraImpl">
         <constructor-arg ref="cluster"/>
         <constructor-arg value="EventStore"/>
         <constructor-arg value="Events"/>

@@ -16,6 +16,8 @@
 
 package com.melexis.esb;
 
+import com.melexis.esb.eventstore.Event;
+import com.melexis.esb.eventstore.impl.EventDaoCassandraImpl;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.beans.HColumn;
 import me.prettyprint.hector.api.beans.HSuperColumn;

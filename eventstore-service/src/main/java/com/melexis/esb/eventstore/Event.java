@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package com.melexis.esb;
+package com.melexis.esb.eventstore;
 
 import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;

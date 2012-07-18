@@ -17,6 +17,10 @@
 package com.melexis.esb;
 
 import com.google.common.collect.ImmutableList;
+import com.melexis.esb.eventstore.Event;
+import com.melexis.esb.eventstore.EventService;
+import com.melexis.esb.eventstore.impl.EventDao;
+import com.melexis.esb.eventstore.impl.EventServiceImpl;
 import com.melexis.util.DateTimeHelper;
 import org.joda.time.DateTime;
 import org.junit.Before;
@@ -60,6 +64,9 @@ public class EventServiceImplTest {
         eventService = new EventServiceImpl(eventDao, dateTimeHelper);
 
         attributes = new HashMap<String, String>();
+        attributes.put("key1", "value1");
+        attributes.put("key2", "value2");
+
         event = Event.createEvent(TEST_TS, TEST_SOURCE, attributes);
         eventList = ImmutableList.of(event);
 
@@ -120,6 +127,17 @@ public class EventServiceImplTest {
         eventService.store(TEST_SOURCE, attributes);
 
         verify(eventDao).store(event);
+    }
+
+    @Test
+    public void testStoreJson() {
+        String json = "{ts: \"" + TEST_TS
+                + "\", source:\"" + TEST_SOURCE
+                + "\", [";
+
+        for(Map.Entry e : attributes.entrySet()) {
+            json += "{ " + e.getKey() + ":\"" + e.getValue() + "\" }";
+        }
     }
 
     @Test

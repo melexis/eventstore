@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-public class BaseCassandraTest {
+public abstract class BaseCassandraTest {
     private static Logger log = LoggerFactory.getLogger(BaseCassandraTest.class);
 
     private static EmbeddedServerHelper embedded;

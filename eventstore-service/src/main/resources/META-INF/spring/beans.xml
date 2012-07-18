@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:osgi="http://www.springframework.org/schema/osgi"
+       xmlns:osgix="http://www.springframework.org/schema/osgi-compendium"
+       xmlns:ctx="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/osgi
+        http://www.springframework.org/schema/osgi/spring-osgi.xsd
+        http://www.springframework.org/schema/osgi-compendium
+        http://www.springframework.org/schema/osgi-compendium/spring-osgi-compendium-1.2.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <osgix:cm-properties id="config" persistent-id="eventstore">
+        <prop key="cassandra.hosts">localhost:9160</prop>
+    </osgix:cm-properties>
+
+    <ctx:property-placeholder properties-ref="config"/>
+
+    <bean id="cassandraHostConfigurator"
+          class="me.prettyprint.cassandra.service.CassandraHostConfigurator">
+        <constructor-arg value="${cassandra.hosts}"/>
+    </bean>
+
+    <bean id="cluster" class="me.prettyprint.cassandra.service.ThriftCluster">
+        <constructor-arg value="TestCluster"/>
+        <constructor-arg ref="cassandraHostConfigurator"/>
+    </bean>
+
+    <bean id="keyspace" class="me.prettyprint.hector.api.factory.HFactory"
+          factory-method="createKeyspace">
+        <constructor-arg value="EventLog"/>
+        <constructor-arg ref="cluster"/>
+    </bean>
+
+    <bean id="eventDao" class="com.melexis.esb.eventstore.impl.EventDaoCassandraImpl">
+        <constructor-arg ref="cluster"/>
+        <constructor-arg value="EventStore"/>
+        <constructor-arg value="Events"/>
+    </bean>
+
+    <bean id="datetime" class="com.melexis.util.DateTimeHelper"/>
+
+    <bean id="eventService" class="com.melexis.esb.eventstore.impl.EventServiceImpl">
+        <constructor-arg ref="eventDao"/>
+        <constructor-arg ref="datetime"/>
+    </bean>
+
+    <osgi:service interface="com.melexis.esb.eventstore.EventService" ref="eventService"/>
+</beans>

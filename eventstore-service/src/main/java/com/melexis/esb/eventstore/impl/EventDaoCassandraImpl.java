@@ -14,10 +14,11 @@
  *    limitations under the License.
  */
 
-package com.melexis.esb;
+package com.melexis.esb.eventstore.impl;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.melexis.esb.eventstore.Event;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.cassandra.service.ThriftKsDef;
 import me.prettyprint.cassandra.service.template.SuperCfTemplate;

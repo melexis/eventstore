@@ -14,8 +14,9 @@
  *    limitations under the License.
  */
 
-package com.melexis.esb;
+package com.melexis.esb.eventstore.impl;
 
+import com.melexis.esb.eventstore.Event;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;

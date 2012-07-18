@@ -16,6 +16,7 @@
 
 package com.melexis.esb;
 
+import com.melexis.esb.eventstore.Event;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
