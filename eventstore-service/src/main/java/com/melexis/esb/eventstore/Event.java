@@ -30,7 +30,7 @@ public class Event implements Comparable {
     private Map<String,String> attributes;
 
 
-    private Event(DateTime ts, String source, Map<String, String> attributes) {
+    public Event(DateTime ts, String source, Map<String, String> attributes) {
         this.timestamp = ts;   // DateTime is immutable
         this.source = source;
         this.attributes = ImmutableMap.copyOf(attributes);

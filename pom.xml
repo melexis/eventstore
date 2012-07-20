@@ -9,8 +9,9 @@
     <packaging>pom</packaging>
     <version>1.1-SNAPSHOT</version>
     <modules>
-        <module>eventstore-feature</module>
+        <module>eventstore-route</module>
         <module>eventstore-service</module>
+        <module>eventstore-feature</module>
     </modules>
 
     <parent>
