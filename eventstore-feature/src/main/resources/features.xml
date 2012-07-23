@@ -32,6 +32,4 @@
         <bundle>mvn:com.melexis.esb/eventstore-service/${version}/jar</bundle>
         <bundle>mvn:com.melexis.esb/eventstore-route/${version}/jar</bundle>
     </feature>
-
 </features>
-                 w

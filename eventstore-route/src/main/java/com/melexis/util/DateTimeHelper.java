@@ -29,6 +29,7 @@ import org.joda.time.format.ISODateTimeFormat;
 public class DateTimeHelper {
 
     private static final DateTimeFormatter ISO_FMT = ISODateTimeFormat.dateTime();
+    private static final DateTimeFormatter ISO_PARSER = ISODateTimeFormat.dateOptionalTimeParser();
 
     public DateTime now() {
 
@@ -37,7 +38,7 @@ public class DateTimeHelper {
     }
 
     public DateTime parse(String text) {
-        return ISO_FMT.parseDateTime(text);
+        return ISO_PARSER.parseDateTime(text);
     }
 
     public String format(DateTime time) {

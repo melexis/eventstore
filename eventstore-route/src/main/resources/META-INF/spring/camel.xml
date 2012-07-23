@@ -19,12 +19,25 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:camel="http://camel.apache.org/schema/spring"
        xmlns:osgi="http://www.springframework.org/schema/osgi"
+       xmlns:osgix="http://www.springframework.org/schema/osgi-compendium"
+       xmlns:ctx="http://www.springframework.org/schema/context"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
                            http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
                            http://www.springframework.org/schema/osgi
                            http://www.springframework.org/schema/osgi/spring-osgi.xsd
                            http://camel.apache.org/schema/spring
-                           http://camel.apache.org/schema/spring/camel-spring.xsd">
+                           http://camel.apache.org/schema/spring/camel-spring.xsd
+                           http://www.springframework.org/schema/osgi-compendium
+                           http://www.springframework.org/schema/osgi-compendium/spring-osgi-compendium-1.2.xsd
+                           http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <osgix:cm-properties id="config" persistent-id="eventstore">
+        <prop key="eventlog.ipport">localhost:8080</prop>
+        <prop key="eventlog.source.urlprefix">/eventlog/source</prop>
+    </osgix:cm-properties>
+
+    <ctx:property-placeholder properties-ref="config"/>
 
     <osgi:reference id="eventService"
                     interface="com.melexis.esb.eventstore.EventService"
@@ -32,11 +45,19 @@
 
 
     <camel:camelContext id="exception-context">
-        <camel:routeBuilder ref="exceptionRoute"/>
-        <camel:endpoint id="eventstore.in.queue" uri="activemq:queue:eventstore.in"/>
+        <camel:endpoint id="eventstore.in" uri="activemq:queue:eventstore.in"/>
+
+        <camel:endpoint id="eventquery.in"
+                        uri="jetty:http://${eventlog.ipport}${eventlog.source.urlprefix}?matchOnUriPrefix=true"/>
+
         <camel:route>
-            <camel:from id="eventstore.in" ref="eventstore.in.queue"/>
+            <camel:from uri="ref:eventstore.in"/>
             <camel:process ref="eventStoreProcessor"/>
+        </camel:route>
+
+        <camel:route>
+            <camel:from  uri="ref:eventquery.in"/>
+            <camel:process ref="eventQueryProcessor"/>
         </camel:route>
     </camel:camelContext>
 
@@ -45,6 +66,12 @@
     <bean id="eventStoreProcessor" class="com.melexis.esb.eventstore.camel.EventStoreProcessor">
         <property name="dateTimeHelper" ref="dateTimeHelper"/>
         <property name="eventService" ref="eventService"/>
+    </bean>
+
+    <bean id="eventQueryProcessor" class="com.melexis.esb.eventstore.camel.EventQueryProcessor">
+        <property name="dateTimeHelper" ref="dateTimeHelper"/>
+        <property name="eventService" ref="eventService"/>
+        <property name="urlPrefix" value="${eventlog.source.urlprefix}"/>
     </bean>
 
 </beans>
