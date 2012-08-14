@@ -19,7 +19,7 @@ package com.melexis.esb.eventstore.impl;
 import com.google.common.collect.ImmutableList;
 import com.melexis.esb.eventstore.Event;
 import com.melexis.esb.eventstore.EventService;
-import com.melexis.util.DateTimeHelper;
+import com.melexis.foundation.util.DateTimeHelper;
 import org.joda.time.DateTime;
 
 import java.util.*;

@@ -21,7 +21,7 @@ import com.melexis.esb.eventstore.Event;
 import com.melexis.esb.eventstore.EventService;
 import com.melexis.esb.eventstore.impl.EventDao;
 import com.melexis.esb.eventstore.impl.EventServiceImpl;
-import com.melexis.util.DateTimeHelper;
+import com.melexis.foundation.util.DateTimeHelper;
 import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;

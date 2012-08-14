@@ -18,7 +18,7 @@ package com.melexis.esb.eventstore.camel;
 
 import com.melexis.esb.eventstore.Event;
 import com.melexis.esb.eventstore.EventService;
-import com.melexis.util.DateTimeHelper;
+import com.melexis.foundation.util.DateTimeHelper;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
