@@ -35,6 +35,7 @@
     <osgix:cm-properties id="config" persistent-id="eventstore">
         <prop key="eventlog.ipport">localhost:8080</prop>
         <prop key="eventlog.source.urlprefix">/eventlog/source</prop>
+        <prop key="activemq.brokerUrl">tcp://localhost:61616</prop>
     </osgix:cm-properties>
 
     <ctx:property-placeholder properties-ref="config"/>
@@ -43,6 +44,10 @@
                     interface="com.melexis.esb.eventstore.EventService"
                     bean-name="eventService"/>
 
+
+    <bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
+        <property name="brokerURL" value="${activemq.brokerUrl}"/>
+    </bean>
 
     <camel:camelContext id="exception-context">
         <camel:endpoint id="eventstore.in" uri="activemq:queue:eventstore.in"/>
@@ -61,7 +66,7 @@
         </camel:route>
     </camel:camelContext>
 
-    <bean id="dateTimeHelper" class="com.melexis.util.DateTimeHelper"/>
+    <bean id="dateTimeHelper" class="com.melexis.foundation.util.DateTimeHelper"/>
 
     <bean id="eventStoreProcessor" class="com.melexis.esb.eventstore.camel.EventStoreProcessor">
         <property name="dateTimeHelper" ref="dateTimeHelper"/>

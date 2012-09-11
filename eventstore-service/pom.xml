@@ -69,6 +69,16 @@
             <groupId>me.prettyprint</groupId>
             <artifactId>hector-test</artifactId>
             <version>${hector.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.github.stephenc</groupId>
@@ -78,6 +88,18 @@
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.5.10</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.5.10</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -94,6 +116,10 @@
                         <Export-Package>
                             com.melexis.esb.eventstore
                         </Export-Package>
+                        <Import-Package>
+                            org.slf4j
+                            ,*
+                        </Import-Package>
                     </instructions>
                 </configuration>
             </plugin>

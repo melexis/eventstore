@@ -44,7 +44,7 @@
         <constructor-arg value="Events"/>
     </bean>
 
-    <bean id="datetime" class="com.melexis.util.DateTimeHelper"/>
+    <bean id="datetime" class="com.melexis.foundation.util.DateTimeHelper"/>
 
     <bean id="eventService" class="com.melexis.esb.eventstore.impl.EventServiceImpl">
         <constructor-arg ref="eventDao"/>

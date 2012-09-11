@@ -16,8 +16,8 @@
 
     <parent>
         <groupId>com.melexis.foundation</groupId>
-        <artifactId>parentpom</artifactId>
-        <version>1.12.5-SNAPSHOT</version>
+        <artifactId>foundation</artifactId>
+        <version>1.13.1-SNAPSHOT</version>
     </parent>
 
     <properties>
