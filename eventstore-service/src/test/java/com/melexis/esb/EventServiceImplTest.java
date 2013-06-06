@@ -303,5 +303,16 @@ public class EventServiceImplTest {
         assertEquals(eventList1, events);
     }
 
+    @Test
+    public void findEventsForProcessIdAndSource() {
+        final String processId = "blaat";
+        final String source = "ewafermap";
+        final int limit = 100;
 
+        when(eventDao.findEventsForProcessIdAndSource(processId, source, null, null, limit)).thenReturn(eventList1);
+
+        List<Event> events = eventService.findEventsForProcessIdAndSource(processId, source, limit);
+
+        assertEquals(eventList1, events);
+    }
 }

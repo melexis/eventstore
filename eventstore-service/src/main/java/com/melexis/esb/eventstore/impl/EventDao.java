@@ -83,4 +83,37 @@ public interface EventDao {
      */
     List<Event> findEventsForLotnameAndSource(final String lotname, final String source, @Nullable DateTime from, @Nullable DateTime till, int max);
 
+    /**
+     * Find all events for a given processId.
+     *
+     * Find the events between from and till for the specified event source for a given processId. The
+     * from and till boundaries are inclusive.
+     *
+     * When a null is passed for the from parameter then all events before till
+     * are returned.
+     *
+     * When a null is passed for the till parameter then all events after from
+     * are returned.
+     *
+     * When both are null all events are returned for the source.
+     *
+     * When from is later than till, then the rows are returned in reverse order.
+     *
+     * The max parameter determines the number of events to return. A particular use
+     * case is paging events on a screen. In this case return one more than the pagesize
+     * and use its timestamp as the start of the next page.
+     *
+     * @param processId
+     * @param source
+     * @param start
+     * @param end
+     * @param max
+     * @return all events found, if any. Returns an empty list if no elements are found,
+     */
+    List<Event> findEventsForProcessIdAndSource(final String processId,
+                                                final String source,
+                                                @Nullable DateTime start,
+                                                @Nullable DateTime end,
+                                                int max);
+
 }

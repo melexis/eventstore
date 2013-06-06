@@ -117,4 +117,7 @@ public class EventServiceImpl implements EventService {
         return eventDao.findEventsForLotnameAndSource(lotname, source, null, null, limit);
     }
 
+    public List<Event> findEventsForProcessIdAndSource(String processId, String source, int limit) {
+        return eventDao.findEventsForProcessIdAndSource(processId, source, null, null, limit);
+    }
 }

@@ -55,4 +55,5 @@ public interface EventService {
 
     List<Event> findEventsForLotNameAndSource(final String lotname, final String source, int limit);
 
+    List<Event> findEventsForProcessIdAndSource(final String processId, final String source, int limit);
 }

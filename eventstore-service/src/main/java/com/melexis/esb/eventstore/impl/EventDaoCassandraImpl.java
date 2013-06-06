@@ -193,6 +193,31 @@ public class EventDaoCassandraImpl implements EventDao {
         return orderedResultSet(from, till, results, max);
     }
 
+    @Override
+    public List<Event> findEventsForProcessIdAndSource(final String processId,
+                                                       final String source,
+                                                       @Nullable DateTime start,
+                                                       @Nullable DateTime end,
+                                                       int max) {
+        String from = (start == null) ? "" : start.toString();
+        String till = (end == null) ? "" : end.toString();
+
+        IndexedSlicesQuery<String, String, String> query =
+                createIndexedSlicesQuery(keyspace, SERIALIZER, SERIALIZER, SERIALIZER);
+        query.setColumnFamily(columnFamily);
+
+        query.addEqualsExpression(PROCESSID, processId);
+        query.addEqualsExpression(SOURCE, source);
+        query.setRange("A", "z", false, 1000);
+
+        addDateTimeConstraints(start, end, from, till, query);
+
+        final List<Row<String, String, String>> rows = query.execute().get().getList();
+        final List<Event> results = Lists.transform(rows, ROW_TO_EVENT_FN);
+
+        return orderedResultSet(from, till, results, max);
+    }
+
     private final static void addDateTimeConstraints(DateTime start,
                                                      DateTime end,
                                                      String from,
