@@ -29,28 +29,30 @@ import java.util.Map;
  */
 public interface EventService {
 
-    public void store(Event event);
+    void store(Event event);
 
-    public void store(Date timestamp, String source, Map<String,String> attributes);
-    public void store(DateTime timestamp, String source, Map<String,String> attributes);
-    public void store(String isoTimestamp, String source, Map<String,String> attributes);
-    public void store(String source, Map<String,String> attributes);
+    void store(Date timestamp, String source, Map<String,String> attributes);
+    void store(DateTime timestamp, String source, Map<String,String> attributes);
+    void store(String isoTimestamp, String source, Map<String,String> attributes);
+    void store(String source, Map<String,String> attributes);
 
 
-    public List<Event> findEvents(String source, DateTime from, DateTime till);
-    public List<Event> findEvents(String source, Date from, Date till);
-    public List<Event> findEvents(String source, String isoFrom, String isoTill);
+    List<Event> findEvents(String source, DateTime from, DateTime till);
+    List<Event> findEvents(String source, Date from, Date till);
+    List<Event> findEvents(String source, String isoFrom, String isoTill);
 
-    public List<Event> findEvents(String source, DateTime from, DateTime till, int limit);
-    public List<Event> findEvents(String source, Date from, Date till, int limit);
-    public List<Event> findEvents(String source, String isoFrom, String isoTill, int limit);
+    List<Event> findEvents(String source, DateTime from, DateTime till, int limit);
+    List<Event> findEvents(String source, Date from, Date till, int limit);
+    List<Event> findEvents(String source, String isoFrom, String isoTill, int limit);
 
-    public List<Event> findEvents(Collection<String> sources, DateTime from, DateTime till);
-    public List<Event> findEvents(Collection<String> sources, Date from, Date till);
-    public List<Event> findEvents(Collection<String> sources, String isoFrom, String isoTill);
+    List<Event> findEvents(Collection<String> sources, DateTime from, DateTime till);
+    List<Event> findEvents(Collection<String> sources, Date from, Date till);
+    List<Event> findEvents(Collection<String> sources, String isoFrom, String isoTill);
 
-    public List<Event> findEvents(Collection<String> sources, DateTime from, DateTime till, int limit);
-    public List<Event> findEvents(Collection<String> sources, Date from, Date till, int limit);
-    public List<Event> findEvents(Collection<String> sources, String isoFrom, String isoTill, int limit);
+    List<Event> findEvents(Collection<String> sources, DateTime from, DateTime till, int limit);
+    List<Event> findEvents(Collection<String> sources, Date from, Date till, int limit);
+    List<Event> findEvents(Collection<String> sources, String isoFrom, String isoTill, int limit);
+
+    List<Event> findEventsForLotNameAndSource(final String lotname, final String source, int limit);
 
 }

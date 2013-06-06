@@ -18,39 +18,64 @@ package com.melexis.esb.eventstore.impl;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import com.melexis.esb.eventstore.Event;
+import me.prettyprint.cassandra.model.IndexedSlicesQuery;
 import me.prettyprint.cassandra.serializers.StringSerializer;
+import me.prettyprint.cassandra.service.ThriftColumnDef;
 import me.prettyprint.cassandra.service.ThriftKsDef;
-import me.prettyprint.cassandra.service.template.SuperCfTemplate;
-import me.prettyprint.cassandra.service.template.SuperCfUpdater;
-import me.prettyprint.cassandra.service.template.ThriftSuperCfTemplate;
+import me.prettyprint.cassandra.service.template.ColumnFamilyTemplate;
+import me.prettyprint.cassandra.service.template.ColumnFamilyUpdater;
+import me.prettyprint.cassandra.service.template.ThriftColumnFamilyTemplate;
 import me.prettyprint.hector.api.Cluster;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.beans.HColumn;
-import me.prettyprint.hector.api.beans.HSuperColumn;
-import me.prettyprint.hector.api.ddl.ColumnFamilyDefinition;
-import me.prettyprint.hector.api.ddl.ColumnType;
-import me.prettyprint.hector.api.ddl.ComparatorType;
-import me.prettyprint.hector.api.ddl.KeyspaceDefinition;
+import me.prettyprint.hector.api.beans.Row;
+import me.prettyprint.hector.api.ddl.*;
 import me.prettyprint.hector.api.factory.HFactory;
-import me.prettyprint.hector.api.query.SuperSliceQuery;
+import org.apache.cassandra.thrift.ColumnDef;
+import org.apache.cassandra.thrift.IndexType;
 import org.joda.time.DateTime;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.annotation.Nullable;
+import java.util.*;
 
-import static me.prettyprint.hector.api.factory.HFactory.createSuperSliceQuery;
+import static me.prettyprint.hector.api.factory.HFactory.createIndexedSlicesQuery;
 
 public class EventDaoCassandraImpl implements EventDao {
 
     public static final StringSerializer SERIALIZER = StringSerializer.get();
+    public static final String LOTNAME = "LOTNAME";
+    public static final String SOURCE = "SOURCE";
+    public static final String PROCESSID = "PROCESSID";
+    public static final String TIMESTAMP = "TIMESTAMP";
+    public static final Function<Row<String,String,String>,Event> ROW_TO_EVENT_FN = new Function<Row<String, String, String>, Event>() {
+        @Override
+        public Event apply(@Nullable Row<String, String, String> row) {
+            Map<String, String> attributes = new HashMap<String, String>();
+            final List<HColumn<String, String>> columns = row.getColumnSlice().getColumns();
+            String source = "";
+            DateTime ts = null;
+            for (HColumn<String, String> column : columns) {
+                if (column.getName().equals(SOURCE)) {
+                    source = column.getValue();
+                } else if (column.getName().equals(TIMESTAMP)) {
+                    ts = new DateTime(column.getValue());
+                } else {
+                    String key = column.getName();
+                    String value = column.getValue();
+                    attributes.put(key, value);
+                }
+            }
 
-    Keyspace keyspace;
-    String columnFamily;
+            final Event event = Event.createEvent(ts, source, attributes);
+            return event;
+        }
+    };
 
-    private int replicationFactor = 1;
+    private final Keyspace keyspace;
+    private final String columnFamily;
+    private final int replicationFactor;
 
     public Keyspace getKeyspace() {
         return keyspace;
@@ -61,6 +86,11 @@ public class EventDaoCassandraImpl implements EventDao {
     }
 
     public EventDaoCassandraImpl(Cluster cluster, String keyspaceName, String columnFamily) {
+        this(cluster, keyspaceName, columnFamily, 3);
+    }
+
+    public EventDaoCassandraImpl(Cluster cluster, String keyspaceName, String columnFamily, int replicationFactor) {
+        this.replicationFactor = replicationFactor;
         this.columnFamily = columnFamily;
 
         KeyspaceDefinition keyspaceDef = cluster.describeKeyspace(keyspaceName);
@@ -75,10 +105,19 @@ public class EventDaoCassandraImpl implements EventDao {
 
     private void createSchema(Cluster cluster, String keyspace, String columnFamily) {
 
+        List<ColumnDef> columns = new ArrayList<ColumnDef>();
+        columns.add(newIndexedColumnDef(LOTNAME, "UTF8Type"));
+        columns.add(newIndexedColumnDef(SOURCE, "UTF8Type"));
+        columns.add(newIndexedColumnDef(PROCESSID, "UTF8Type"));
+        columns.add(newIndexedColumnDef(TIMESTAMP, "UTF8Type"));
+        List<ColumnDefinition> columnMetadata = ThriftColumnDef.fromThriftList(columns);
+
         ColumnFamilyDefinition cfDef = HFactory.createColumnFamilyDefinition(keyspace,
                 columnFamily,
-                ComparatorType.BYTESTYPE);
-        cfDef.setColumnType(ColumnType.SUPER);
+                ComparatorType.BYTESTYPE,
+                columnMetadata);
+        cfDef.setColumnType(ColumnType.STANDARD);
+
 
         KeyspaceDefinition newKeyspace = HFactory.createKeyspaceDefinition(keyspace,
                 ThriftKsDef.DEF_STRATEGY_CLASS,
@@ -87,17 +126,17 @@ public class EventDaoCassandraImpl implements EventDao {
 
         // Add the schema to the cluster.
         cluster.addKeyspace(newKeyspace);
-
     }
 
     public void store(Event event) {
 
-        SuperCfTemplate<String, String, String> template
-                = new ThriftSuperCfTemplate<String, String, String>(keyspace, columnFamily,
-                        SERIALIZER, SERIALIZER, SERIALIZER);
+        ColumnFamilyTemplate<String, String> template
+                = new ThriftColumnFamilyTemplate<String, String>(keyspace, columnFamily,
+                SERIALIZER, SERIALIZER);
 
-        SuperCfUpdater<String, String, String> updater = template.createUpdater(event.getSource());
-        updater.addSuperColumn(event.getTimestamp().toString());
+        ColumnFamilyUpdater<String, String> updater = template.createUpdater(UUID.randomUUID().toString());
+        updater.setString(SOURCE, event.getSource());
+        updater.setString(TIMESTAMP, event.getTimestamp().toString());
         for (Map.Entry<String, String> entry : event.getAttributes().entrySet()) {
             updater.setString(entry.getKey(), entry.getValue());
         }
@@ -110,49 +149,96 @@ public class EventDaoCassandraImpl implements EventDao {
         String from = (start == null) ? "" : start.toString();
         String till = (end == null) ? "" : end.toString();
 
-        SuperSliceQuery<String, String, String, String> query =
-                createSuperSliceQuery(
-                        keyspace,
-                        SERIALIZER,
-                        SERIALIZER,
-                        SERIALIZER,
-                        SERIALIZER)
-                        .setColumnFamily(columnFamily)
-                        .setKey(source);
+        IndexedSlicesQuery<String, String, String> query =
+                createIndexedSlicesQuery(keyspace, SERIALIZER, SERIALIZER, SERIALIZER);
+        query.setColumnFamily(columnFamily);
 
-        if ((till.compareTo(from) > 0) || till.equals("")) {
-            query.setRange(from, till, false, max);
-        } else {
-            // return rows in reverse order
-            query.setRange(from, till, true, max);
-        }
+        query.addEqualsExpression(SOURCE, source);
 
-        List<HSuperColumn<String, String, String>> rows = query.execute().get().getSuperColumns();
+        addDateTimeConstraints(start, end, from, till, query);
 
-        return Lists.transform(rows, new SuperColumnToEventConverter(source));
+        query.setRange("A", "z", false, 1000);
+
+        List<Row<String, String, String>> rows = query.execute().get().getList();
+
+        final List<Event> results = Lists.transform(rows, ROW_TO_EVENT_FN);
+
+        return orderedResultSet(from, till, results, max);
     }
 
-    private class SuperColumnToEventConverter implements Function<HSuperColumn<String, String, String>, Event> {
 
-        String source;
 
-        SuperColumnToEventConverter(String source) {
-            this.source = source;
-        }
+    @Override
+    public List<Event> findEventsForLotnameAndSource(final String lotname,
+                                                     final String source,
+                                                     @Nullable DateTime start,
+                                                     @Nullable DateTime end,
+                                                     int max) {
+        String from = (start == null) ? "" : start.toString();
+        String till = (end == null) ? "" : end.toString();
 
-        public Event apply(@javax.annotation.Nullable HSuperColumn<String, String, String> in) {
-            Map<String, String> attributes = new HashMap<String, String>();
+        IndexedSlicesQuery<String, String, String> query =
+                createIndexedSlicesQuery(keyspace, SERIALIZER, SERIALIZER, SERIALIZER);
+        query.setColumnFamily(columnFamily);
 
-            DateTime ts = new DateTime(in.getName());
-            for (HColumn<String, String> column : in.getColumns()) {
-                String key = column.getName();
-                String value = column.getValue();
-                attributes.put(key, value);
+        query.addEqualsExpression(LOTNAME, lotname);
+        query.addEqualsExpression(SOURCE, source);
+        query.setRange("A", "z", false, 1000);
+
+        addDateTimeConstraints(start, end, from, till, query);
+
+        final List<Row<String, String, String>> rows = query.execute().get().getList();
+        final List<Event> results = Lists.transform(rows, ROW_TO_EVENT_FN);
+
+        return orderedResultSet(from, till, results, max);
+    }
+
+    private final static void addDateTimeConstraints(DateTime start,
+                                                     DateTime end,
+                                                     String from,
+                                                     String till,
+                                                     IndexedSlicesQuery<String, String, String> query) {
+        if ((till.compareTo(from) > 0) || till.equals("")) {
+            query.addGteExpression(TIMESTAMP, from);
+            if (end != null) {
+                query.addLteExpression(TIMESTAMP, till);
             }
-
-            return Event.createEvent(ts, source, attributes);
+        } else {
+            // return rows in reverse order
+            if (start != null) {
+                query.addGteExpression(TIMESTAMP, till);
+            }
+            query.addLteExpression(TIMESTAMP, from);
         }
+    }
 
+    private final static ColumnDef newIndexedColumnDef(String column_name, String comparer) {
+        final StringSerializer ss = StringSerializer.get();
+        final ColumnDef cd = new ColumnDef(ss.toByteBuffer(column_name), comparer);
+        cd.setIndex_name(column_name);
+        cd.setIndex_type(IndexType.KEYS);
+        return cd;
+    }
+
+    private final static List<Event> orderedResultSet(String from, String till, List<Event> results, int max) {
+        final int toIndex = max > results.size() ? results.size() : max;
+        List<Event> events;
+        if ((till.compareTo(from) > 0) || till.equals("")) {
+            events = Ordering.natural().onResultOf(new Function<Event, Comparable>() {
+                @Override
+                public Comparable apply(@Nullable Event event) {
+                    return event.getTimestamp();
+                }
+            }).sortedCopy(results);
+        } else {
+            events =  Ordering.natural().onResultOf(new Function<Event, Comparable>() {
+                @Override
+                public Comparable apply(@Nullable Event event) {
+                    return event.getTimestamp();
+                }
+            }).reverse().sortedCopy(results);
+        }
+        return events.subList(0, toIndex);
     }
 }
 

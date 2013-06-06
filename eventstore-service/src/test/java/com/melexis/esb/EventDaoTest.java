@@ -16,28 +16,41 @@
 
 package com.melexis.esb;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.melexis.esb.eventstore.Event;
 import com.melexis.esb.eventstore.impl.EventDaoCassandraImpl;
+import me.prettyprint.cassandra.model.IndexedSlicesQuery;
+import me.prettyprint.hector.api.Cluster;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.beans.HColumn;
 import me.prettyprint.hector.api.beans.HSuperColumn;
+import me.prettyprint.hector.api.beans.OrderedRows;
 import me.prettyprint.hector.api.factory.HFactory;
 import me.prettyprint.hector.api.query.QueryResult;
 import me.prettyprint.hector.api.query.SuperColumnQuery;
 import org.joda.time.DateTime;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
+import static me.prettyprint.hector.api.factory.HFactory.createIndexedSlicesQuery;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"classpath:/beans.xml"})
@@ -55,42 +68,53 @@ public class EventDaoTest extends BaseCassandraTest {
     Keyspace keyspace;
 
     @Autowired
+    Cluster cluster;
+
+    @Autowired
     EventDaoCassandraImpl dao;
 
-    @Test
+    @Test @DirtiesContext
     public void testStore() {
         Event ev = createEvent(TEST_TS, TEST_SOURCE, 0);
         dao.store(ev);
 
         final List<HColumn<String, String>> columns = getColumns();
 
+
+
         // check first column
-        HColumn<String, String> column1 = columns.get(0);
+        HColumn<String, String> column1 = findColumnWithName("key1", columns);
         assertEquals("key1", column1.getName());
         assertEquals("value1 - #0", column1.getValue());
 
         // check 2nd column
-        HColumn<String, String> column2 = columns.get(1);
+        HColumn<String, String> column2 = findColumnWithName("key2", columns);
         assertEquals("key2", column2.getName());
         assertEquals("value2 - #0", column2.getValue());
     }
 
+    private HColumn<String, String> findColumnWithName(final String name,
+                                                       final List<HColumn<String, String>> columns) {
+        return Iterables.filter(columns, new Predicate<HColumn<String, String>>() {
+            @Override
+            public boolean apply(@Nullable HColumn<String, String> col) {
+                return col.getName().equals(name);
+            }
+        }).iterator().next();
+    }
+
     private List<HColumn<String, String>> getColumns() {
-        SuperColumnQuery<String, String, String, String> superColumnQuery =
-                HFactory.createSuperColumnQuery(dao.getKeyspace(),
-                        STRING_SERIALIZER,
-                        STRING_SERIALIZER,
-                        STRING_SERIALIZER,
-                        STRING_SERIALIZER);
+        IndexedSlicesQuery<String, String, String> query =
+                createIndexedSlicesQuery(dao.getKeyspace(), STRING_SERIALIZER, STRING_SERIALIZER, STRING_SERIALIZER);
+        query.setColumnFamily(dao.getColumnFamily());
 
-        superColumnQuery.setColumnFamily(dao.getColumnFamily())
-                .setKey(TEST_SOURCE)
-                .setSuperName(TEST_TS.toString());
+        query.addEqualsExpression(EventDaoCassandraImpl.SOURCE, TEST_SOURCE);
+        query.addEqualsExpression(EventDaoCassandraImpl.TIMESTAMP, TEST_TS.toString());
 
-        QueryResult<HSuperColumn<String, String, String>> result
-                = superColumnQuery.execute();
+        query.setRange("A", "z", false, 1000);
 
-        return result.get().getColumns();
+        final OrderedRows<String, String, String> res = query.execute().get();
+        return res.getList().get(0).getColumnSlice().getColumns();
     }
 
 
@@ -101,11 +125,8 @@ public class EventDaoTest extends BaseCassandraTest {
         return Event.createEvent(ts, s, attr);
     }
 
-    @Test
+    @Test @DirtiesContext
     public void testFindEvents() {
-        initEvents();
-
-
         List<Event> events = dao.findEvents(TEST_SOURCE, TEST_TS, TEST_TS.plus(5 * INTERVAL_MS), 10000);
 
         assertEquals(6, events.size());
@@ -119,11 +140,17 @@ public class EventDaoTest extends BaseCassandraTest {
 
     }
 
-    private void initEvents() {
+    @Before
+    public void initEvents() {
         for (int i = 0; i < NR_EVENTS; i++) {
             Event ev = createEvent(TEST_TS.plus(i * INTERVAL_MS), TEST_SOURCE, i);
             dao.store(ev);
         }
+    }
+
+    @After
+    public void cleanEvents() {
+        cluster.truncate("EventStore", "Events");
     }
 
     private void checkEvent(int i, Event ev) {
@@ -132,12 +159,11 @@ public class EventDaoTest extends BaseCassandraTest {
         assertEquals("value2 - #" + i,ev.get("key2"));
     }
 
-    @Test
+    @Test @DirtiesContext
     public void testFindEventsLimited() {
-        initEvents();
-
-
         List<Event> events = dao.findEvents(TEST_SOURCE, TEST_TS, TEST_TS.plus(5 * INTERVAL_MS), NR_LIMITED);
+
+        System.out.println("EVENTS " + events);
 
         assertEquals(NR_LIMITED, events.size());
 
@@ -150,11 +176,8 @@ public class EventDaoTest extends BaseCassandraTest {
 
     }
 
-    @Test
+    @Test @DirtiesContext
     public void testFindEventsNoUpperBound() {
-        initEvents();
-
-
         List<Event> events = dao.findEvents(TEST_SOURCE, TEST_TS, null, 10000);
 
         assertEquals(NR_EVENTS, events.size());
@@ -162,11 +185,8 @@ public class EventDaoTest extends BaseCassandraTest {
     }
 
 
-    @Test
+    @Test @DirtiesContext
     public void testFindEventsNoLowerBound() {
-        initEvents();
-
-
         int nr = 50;
         List<Event> events = dao.findEvents(TEST_SOURCE,
                 null, TEST_TS.plus(nr * INTERVAL_MS),
@@ -176,7 +196,7 @@ public class EventDaoTest extends BaseCassandraTest {
 
     }
 
-    @Test
+    @Test @DirtiesContext
     public void testFindEventsNoMatching() {
 
         // find all event strictly before the first one, i.e. none
@@ -187,10 +207,8 @@ public class EventDaoTest extends BaseCassandraTest {
         assertEquals(0, events.size());
     }
 
-    @Test
+    @Test @DirtiesContext
     public void testFindEventsReverseOrder() {
-        initEvents();
-
         List<Event> events = dao.findEvents(TEST_SOURCE, TEST_TS.plus(5 * INTERVAL_MS), TEST_TS, NR_LIMITED);
 
         assertEquals(NR_LIMITED, events.size());
@@ -203,6 +221,25 @@ public class EventDaoTest extends BaseCassandraTest {
 
     }
 
+    @Test @DirtiesContext
+    public void findEventsByLotname() {
+        for (int i=0; i<50; i++) {
+            dao.store(new Event(new DateTime(), "audit_log", ImmutableMap.of("LOTNAME", "A12345")));
+        }
 
+        List<Event> events = dao.findEventsForLotnameAndSource("A12345", "audit_log", null, null, 100);
+        assertEquals(50, events.size());
+    }
+
+    @Test @DirtiesContext
+    public void findEventsByLotnameLowerBounder() {
+        final DateTime start = new DateTime();
+        for (int i=0; i<50; i++) {
+            dao.store(new Event(start.plusSeconds(i * 10), "audit_log", ImmutableMap.of("LOTNAME", "A12345")));
+        }
+
+        List<Event> events = dao.findEventsForLotnameAndSource("A12345", "audit_log", start.plusSeconds(30), null, 100);
+        assertEquals(47, events.size());
+    }
 }
 

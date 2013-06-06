@@ -24,5 +24,6 @@
         <constructor-arg ref="cluster"/>
         <constructor-arg value="EventStore"/>
         <constructor-arg value="Events"/>
+        <constructor-arg value="1" />
     </bean>
 </beans>

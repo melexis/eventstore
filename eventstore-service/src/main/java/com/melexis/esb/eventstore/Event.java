@@ -108,4 +108,13 @@ public class Event implements Comparable {
 
         return result;  //To change body of implemented methods use File | Settings | File Templates.
     }
+
+    @Override
+    public String toString() {
+        return "Event{" +
+                "timestamp=" + timestamp +
+                ", source='" + source + '\'' +
+                ", attributes=" + attributes +
+                '}';
+    }
 }

@@ -24,7 +24,7 @@ import java.util.List;
 
 public interface EventDao {
 
-    public void store(Event event);
+    void store(Event event);
 
     /**
      * Find events for the specified source.
@@ -52,6 +52,35 @@ public interface EventDao {
      * @param max     The maximum number of events to return
      * @return all events found, if any. Returns an empty list if no elements are found,
      */
-    public List<Event> findEvents(String source, @Nullable DateTime from, @Nullable DateTime till, int max);
+    List<Event> findEvents(String source, @Nullable DateTime from, @Nullable DateTime till, int max);
+
+    /**
+     * Find all events for a given lotname.
+     *
+     * Find the events between from and till for the specified event source for a given lotname. The
+     * from and till boundaries are inclusive.
+     *
+     * When a null is passed for the from parameter then all events before till
+     * are returned.
+     *
+     * When a null is passed for the till parameter then all events after from
+     * are returned.
+     *
+     * When both are null all events are returned for the source.
+     *
+     * When from is later than till, then the rows are returned in reverse order.
+     *
+     * The max parameter determines the number of events to return. A particular use
+     * case is paging events on a screen. In this case return one more than the pagesize
+     * and use its timestamp as the start of the next page.
+     *
+     * @param lotname
+     * @param source
+     * @param from
+     * @param till
+     * @param max
+     * @return all events found, if any. Returns an empty list if no elements are found,
+     */
+    List<Event> findEventsForLotnameAndSource(final String lotname, final String source, @Nullable DateTime from, @Nullable DateTime till, int max);
 
 }

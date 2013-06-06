@@ -113,4 +113,8 @@ public class EventServiceImpl implements EventService {
         return findEvents(sources, new DateTime(isoFrom), new DateTime(isoTill), limit);
     }
 
+    public List<Event> findEventsForLotNameAndSource(final String lotname, final String source, final int limit) {
+        return eventDao.findEventsForLotnameAndSource(lotname, source, null, null, limit);
+    }
+
 }

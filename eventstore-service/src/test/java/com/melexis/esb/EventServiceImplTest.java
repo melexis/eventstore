@@ -290,5 +290,18 @@ public class EventServiceImplTest {
          assertEquals(eventListSummed.subList(0,3), result);
      }
 
+    @Test
+    public void findEventsForLotNameAndSource() {
+        final String lotname = "A12345";
+        final String source = "ewafermap";
+        final int limit = 100;
+
+        when(eventDao.findEventsForLotnameAndSource(lotname, source, null, null, limit)).thenReturn(eventList1);
+
+        List<Event> events = eventService.findEventsForLotNameAndSource(lotname, source, limit);
+
+        assertEquals(eventList1, events);
+    }
+
 
 }
