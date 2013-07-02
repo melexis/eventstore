@@ -241,5 +241,15 @@ public class EventDaoTest extends BaseCassandraTest {
         List<Event> events = dao.findEventsForLotnameAndSource("A12345", "audit_log", start.plusSeconds(30), null, 100);
         assertEquals(47, events.size());
     }
+
+    @Test @DirtiesContext
+    public void findEventsByProcessId() {
+        for (int i=0; i<50; i++) {
+            dao.store(new Event(new DateTime(), "audit_log", ImmutableMap.of("LOTNAME", "A12345", "PROCESSID", "123")));
+        }
+
+        List<Event> events = dao.findEventsForProcessIdAndSource("123", "audit_log", null, null, 100);
+        assertEquals(50, events.size());
+    }
 }
 
