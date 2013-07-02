@@ -19,12 +19,13 @@ package com.melexis.esb.eventstore;
 import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
  * An immutable class to capture events happening.
  */
-public class Event implements Comparable {
+public class Event implements Comparable, Serializable {
     private DateTime timestamp;
     private String source;
     private Map<String,String> attributes;

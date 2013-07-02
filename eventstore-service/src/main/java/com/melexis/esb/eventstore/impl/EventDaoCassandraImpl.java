@@ -114,10 +114,11 @@ public class EventDaoCassandraImpl implements EventDao {
 
         ColumnFamilyDefinition cfDef = HFactory.createColumnFamilyDefinition(keyspace,
                 columnFamily,
-                ComparatorType.BYTESTYPE,
+                ComparatorType.UTF8TYPE,
                 columnMetadata);
         cfDef.setColumnType(ColumnType.STANDARD);
-
+        cfDef.setKeyValidationClass("org.apache.cassandra.db.marshal.UTF8Type");
+        cfDef.setDefaultValidationClass("org.apache.cassandra.db.marshal.UTF8Type");
 
         KeyspaceDefinition newKeyspace = HFactory.createKeyspaceDefinition(keyspace,
                 ThriftKsDef.DEF_STRATEGY_CLASS,
@@ -179,11 +180,13 @@ public class EventDaoCassandraImpl implements EventDao {
 
         IndexedSlicesQuery<String, String, String> query =
                 createIndexedSlicesQuery(keyspace, SERIALIZER, SERIALIZER, SERIALIZER);
+
         query.setColumnFamily(columnFamily);
 
         query.addEqualsExpression(LOTNAME, lotname);
         query.addEqualsExpression(SOURCE, source);
         query.setRange("A", "z", false, 1000);
+        query.setStartKey("");
 
         addDateTimeConstraints(start, end, from, till, query);
 
@@ -209,6 +212,7 @@ public class EventDaoCassandraImpl implements EventDao {
         query.addEqualsExpression(PROCESSID, processId);
         query.addEqualsExpression(SOURCE, source);
         query.setRange("A", "z", false, 1000);
+        query.setStartKey("");
 
         addDateTimeConstraints(start, end, from, till, query);
 
