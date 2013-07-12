@@ -25,7 +25,7 @@
         <bundle>wrap:mvn:org.apache.cassandra/cassandra-thrift/1.0.9/jar</bundle>
         <bundle>mvn:me.prettyprint/hector-core/1.0-5/jar</bundle>
         <bundle>mvn:joda-time/joda-time/1.6</bundle>
-        <bundle>mvn:com.melexis.foundation/util/1.13.1-SNAPSHOT/jar</bundle>
+        <bundle>mvn:com.melexis.foundation/util/1.13.7/jar</bundle>
         <bundle>mvn:com.melexis.esb/eventstore-service/${version}/jar</bundle>
     </feature>
 
