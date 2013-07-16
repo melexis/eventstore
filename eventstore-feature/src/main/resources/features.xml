@@ -17,19 +17,17 @@
 
 <features>
     <feature name="eventstore-service" version="${version}">
-        <feature>camel-activemq</feature>
-
-        <bundle>mvn:com.googlecode.guava-osgi/guava-osgi/9.0.0/jar</bundle>
+        <feature>esb-foundation</feature>
 
         <bundle>wrap:mvn:org.apache.thrift/libthrift/0.6.1/jar</bundle>
         <bundle>wrap:mvn:org.apache.cassandra/cassandra-thrift/1.0.9/jar</bundle>
         <bundle>mvn:me.prettyprint/hector-core/1.0-5/jar</bundle>
-        <bundle>mvn:joda-time/joda-time/1.6</bundle>
-        <bundle>mvn:com.melexis.foundation/util/1.13.7/jar</bundle>
+
         <bundle>mvn:com.melexis.esb/eventstore-service/${version}/jar</bundle>
     </feature>
 
     <feature name="eventstore" version="${version}">
+        <feature>esb-foundation</feature>
         <feature>camel-jetty</feature>
         <feature>eventstore-service</feature>
 
