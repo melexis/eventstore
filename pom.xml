@@ -37,6 +37,11 @@
             <name>Internal Snapshots</name>
             <url>http://nexus.colo.elex.be:8081/nexus/content/repositories/snapshots</url>
         </snapshotRepository>
+        <site>
+            <id>eventstore</id>
+            <url>file:///var/www/jenkins/eventstore</url>
+        </site>
     </distributionManagement>
 
 </project>
+
