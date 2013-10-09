@@ -119,6 +119,11 @@
             <version>0.6</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.melexis.foundation</groupId>
+            <artifactId>util</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

@@ -24,8 +24,12 @@
 package com.melexis.esb.eventstore.impl;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.melexis.common.Tuple;
 import com.melexis.esb.eventstore.Event;
+import com.melexis.iterators.PropertyLists;
 import me.prettyprint.cassandra.model.thrift.ThriftSliceQuery;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.cassandra.utils.Assert;
@@ -41,9 +45,7 @@ import me.prettyprint.hector.api.query.SliceQuery;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static org.antlr.tool.ErrorManager.assertTrue;
 
@@ -107,14 +109,86 @@ public class EventDaoCassandraWithCFSImpl implements EventDao {
     }
 
     @Override
-    public List<Event> findEvents(String source, @Nullable DateTime from, @Nullable DateTime till, int max) {
-        Assert.isTrue(max > 0);
+    public List<Event> findEvents(final String source,
+                                  final @Nullable DateTime from,
+                                  final @Nullable DateTime till,
+                                  final int max) {
+        Assert.isTrue(max > 0, "Max needs to be larger than 0");
         int n = 0;
-        final List<Event> events = new ArrayList<Event>(max);
+        final List<Event> events = new ArrayList<>(max);
         final String start = from == null ? null : from.toString();
         final String finish = till == null ? null : till.toString();
 
-        final SliceQuery<String, String, String> csq = new ThriftSliceQuery<String, String, String>(
+        final List<HColumn<String, String>> clusterColumns = findTimeSeriesCluster(source, start, finish);
+
+        for (final HColumn<String, String> clusterColumn: clusterColumns) {
+            final List<HColumn<String, String>> eventsIdColumns =
+                    findEventsPerTimestamp(max, n, start, finish, clusterColumn.getValue());
+            n += eventsIdColumns.size();
+
+            for (HColumn<String, String> eventIdColumn: eventsIdColumns) {
+                final Event event = findEventWithId(source, eventIdColumn.getValue());
+                events.add(event);
+
+            }
+
+            if (n >= max) {
+                break;
+            }
+        }
+
+        return events;
+    }
+
+    private Event findEventWithId(final String source,
+                                  final String id) {
+        final SliceQuery<String, String, String> esq = new ThriftSliceQuery<>(
+                keyspace,
+                StringSerializer.get(),
+                StringSerializer.get(),
+                StringSerializer.get());
+
+        esq.setKey(id);
+        esq.setRange(" ", "~", false, 100);
+        esq.setColumnFamily(EVENTS);
+
+
+        DateTime dt = null;
+        final ImmutableMap.Builder<String, String> propsB = new ImmutableMap.Builder<>();
+
+        for (final HColumn<String, String> col: esq.execute().get().getColumns()) {
+            if (col.getName().equals("DATE")) {
+                dt = new DateTime(col.getValue());
+            } else {
+                propsB.put(col.getName(), col.getValue());
+            }
+        }
+
+        final ImmutableMap<String, String> properties = propsB.build();
+        return new Event(dt, source, properties);
+    }
+
+    private List<HColumn<String, String>> findEventsPerTimestamp(int max,
+                                                                 int n,
+                                                                 String start,
+                                                                 String finish,
+                                                                 final String clusterId) {
+        final SliceQuery<String, String, String> tsSq = new ThriftSliceQuery<>(
+                keyspace,
+                StringSerializer.get(),
+                StringSerializer.get(),
+                StringSerializer.get());
+
+        // the cluster uuid
+        tsSq.setKey(clusterId);
+        tsSq.setRange(start, finish, false, max - n);
+        tsSq.setColumnFamily(EVENTS_PER_TIMESTAMP);
+
+        return tsSq.execute().get().getColumns();
+    }
+
+    private List<HColumn<String, String>> findTimeSeriesCluster(String source, String start, String finish) {
+        final SliceQuery<String, String, String> csq = new ThriftSliceQuery<>(
                 keyspace,
                 StringSerializer.get(),
                 StringSerializer.get(),
@@ -127,34 +201,16 @@ public class EventDaoCassandraWithCFSImpl implements EventDao {
                 false, 5);
 
         csq.setColumnFamily(TIMESTAMP_CLUSTER);
-        final List<HColumn<String, String>> clusterColumns = csq.execute().get().getColumns();
-
-        for (final HColumn<String, String> clusterColumn: clusterColumns) {
-            final SliceQuery<String, String, String> tsSq = new ThriftSliceQuery<String, String, String>(
-                    keyspace,
-                    StringSerializer.get(),
-                    StringSerializer.get(),
-                    StringSerializer.get());
-
-            // the cluster uuid
-            tsSq.setKey(clusterColumn.getValue());
-            tsSq.setRange(start, finish, false, max - n);
-            tsSq.setColumnFamily(EVENTS_PER_TIMESTAMP);
-
-            final List<HColumn<String, String>> eventsIdColumns = tsSq.execute().get().getColumns();
-            n += eventsIdColumns.size();
-
-            for (HColumn<String, String> eventIdColumn: )
-
-            if (n >= max) {
-                break;
-            }
-        }
+        return csq.execute().get().getColumns();
     }
 
     @Override
-    public List<Event> findEventsForLotnameAndSource(String lotname, String source, @Nullable DateTime from, @Nullable DateTime till, int max) {
-        throw new AssertionError("not implemented");
+    public List<Event> findEventsForLotnameAndSource(final String lotname,
+                                                     final String source,
+                                                     @Nullable final DateTime from,
+                                                     @Nullable final DateTime till,
+                                                     final int max) {
+        // search for the newest
     }
 
     @Override
