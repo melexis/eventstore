@@ -16,9 +16,12 @@
 
 package com.melexis.esb;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import com.melexis.esb.eventstore.Event;
 import com.melexis.esb.eventstore.impl.EventDaoCassandraImpl;
 import me.prettyprint.cassandra.model.IndexedSlicesQuery;
@@ -30,6 +33,7 @@ import me.prettyprint.hector.api.beans.OrderedRows;
 import me.prettyprint.hector.api.factory.HFactory;
 import me.prettyprint.hector.api.query.QueryResult;
 import me.prettyprint.hector.api.query.SuperColumnQuery;
+import net.java.quickcheck.generator.PrimitiveGenerators;
 import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
@@ -43,10 +47,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
@@ -162,9 +163,7 @@ public class EventDaoTest extends BaseCassandraTest {
     @Test @DirtiesContext
     public void testFindEventsLimited() {
         List<Event> events = dao.findEvents(TEST_SOURCE, TEST_TS, TEST_TS.plus(5 * INTERVAL_MS), NR_LIMITED);
-
         System.out.println("EVENTS " + events);
-
         assertEquals(NR_LIMITED, events.size());
 
         // check the right events are returned in order
@@ -251,5 +250,46 @@ public class EventDaoTest extends BaseCassandraTest {
         List<Event> events = dao.findEventsForProcessIdAndSource("123", "audit_log", null, null, 100);
         assertEquals(50, events.size());
     }
-}
 
+    @Test
+    public void findByLotnameAndSource() {
+        final Map<String, Set<DateTime>> datetimesPerLotname = new HashMap<String, Set<DateTime>>();
+
+        for (final String lotname: net.java.quickcheck.generator.iterable.Iterables.toIterable(PrimitiveGenerators.strings(), 20)) {
+            datetimesPerLotname.put(lotname, new HashSet<DateTime>());
+            for (final Integer x: net.java.quickcheck.generator.iterable.Iterables.toIterable(PrimitiveGenerators.integers(), 50)) {
+                final UUID processId = UUID.randomUUID();
+
+                for (final Date d: net.java.quickcheck.generator.iterable.Iterables.toIterable(PrimitiveGenerators.dates(), 50)) {
+                    final DateTime dt = new DateTime(d);
+
+                    final Set<DateTime> dateTimes = datetimesPerLotname.get(lotname);
+                    dateTimes.add(dt);
+
+                    dao.store(new Event(
+                            dt,
+                            "audit_log",
+                            ImmutableMap.of(
+                                    "LOTNAME", lotname,
+                                    "PROCESSID", processId.toString()
+                            )
+                    ));
+                }
+            }
+        }
+
+        assertEquals(20, datetimesPerLotname.size());
+        for (Map.Entry<String, Set<DateTime>> e: datetimesPerLotname.entrySet()) {
+            final List<Event> eventsForLotname = dao.findEventsForLotnameAndSource(e.getKey(), "audit_log", null, null, 100);
+            final List<DateTime> dateTimes = Lists.transform(eventsForLotname, new Function<Event, DateTime>() {
+                @Override
+                public DateTime apply(@Nullable Event input) {
+                    return input.getTimestamp();
+                }
+            });
+
+            final List<DateTime> expected = Ordering.natural().sortedCopy(e.getValue()).subList(0, 100);
+            assertEquals(expected, dateTimes);
+        }
+    }
+}

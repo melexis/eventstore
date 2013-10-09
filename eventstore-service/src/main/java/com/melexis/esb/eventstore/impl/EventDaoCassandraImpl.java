@@ -153,12 +153,9 @@ public class EventDaoCassandraImpl implements EventDao {
         IndexedSlicesQuery<String, String, String> query =
                 createIndexedSlicesQuery(keyspace, SERIALIZER, SERIALIZER, SERIALIZER);
         query.setColumnFamily(columnFamily);
-
         query.addEqualsExpression(SOURCE, source);
-
         addDateTimeConstraints(start, end, from, till, query);
-
-        query.setRange("A", "z", false, 1000);
+        query.setRange(" ", "~", false, 1000);
 
         List<Row<String, String, String>> rows = query.execute().get().getList();
 
