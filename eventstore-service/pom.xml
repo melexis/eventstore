@@ -21,12 +21,12 @@
     <groupId>com.melexis.esb</groupId>
     <artifactId>eventstore-service</artifactId>
     <packaging>bundle</packaging>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.5.0</version>
 
     <parent>
         <groupId>com.melexis.esb</groupId>
         <artifactId>eventstore</artifactId>
-        <version>1.5.0-SNAPSHOT</version>
+        <version>1.5.0</version>
     </parent>
 
     <dependencies>
