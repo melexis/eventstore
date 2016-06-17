@@ -35,6 +35,7 @@ import me.prettyprint.hector.api.ddl.*;
 import me.prettyprint.hector.api.factory.HFactory;
 import org.apache.cassandra.thrift.ColumnDef;
 import org.apache.cassandra.thrift.IndexType;
+import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
@@ -73,6 +74,8 @@ public class EventDaoCassandraImpl implements EventDao {
         }
     };
 
+    private final static Logger log = Logger.getLogger(EventDaoCassandraImpl.class);
+
     private final Keyspace keyspace;
     private final String columnFamily;
     private final int replicationFactor;
@@ -93,14 +96,33 @@ public class EventDaoCassandraImpl implements EventDao {
         this.replicationFactor = replicationFactor;
         this.columnFamily = columnFamily;
 
-        KeyspaceDefinition keyspaceDef = cluster.describeKeyspace(keyspaceName);
+        this.keyspace = connectWithExponentialBackoff(cluster, keyspaceName, columnFamily);
+    }
 
-        // If keyspace does not exist, the CFs don't exist either. => create them.
-        // TODO: This is a blunt instrument. Needs refactoring when adding a new DAO.
-        if (keyspaceDef == null) {
-            createSchema(cluster, keyspaceName, columnFamily);
+    private Keyspace connectWithExponentialBackoff(Cluster cluster, String keyspaceName, String columnFamily) {
+        long timeout = 1;
+        long millis = 0;
+
+        while (true) {
+            try {
+                Thread.sleep(millis);
+
+                KeyspaceDefinition keyspaceDef = cluster.describeKeyspace(keyspaceName);
+
+                // If keyspace does not exist, the CFs don't exist either. => create them.
+                // TODO: This is a blunt instrument. Needs refactoring when adding a new DAO.
+                if (keyspaceDef == null) {
+                    createSchema(cluster, keyspaceName, columnFamily);
+                }
+                return HFactory.createKeyspace(keyspaceName, cluster);
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Interrupted while retrying connection to cassandra.", e);
+            } catch (Exception e) {
+                timeout++;
+                millis = (long) Math.exp((double) timeout);
+                log.warn(String.format("Exception while trying to connect to cassandra.  Retrying in %d ms.", millis), e);
+            }
         }
-        this.keyspace = HFactory.createKeyspace(keyspaceName, cluster);
     }
 
     private void createSchema(Cluster cluster, String keyspace, String columnFamily) {
