@@ -24,6 +24,9 @@
 
     <properties>
         <hector.version>1.0-5</hector.version>
+        <additionalparam>-Xdoclint:none</additionalparam>
+        <maven-pmd-plugin.version>3.5</maven-pmd-plugin.version>
+        <findbugs-maven-plugin.version>3.0.1</findbugs-maven-plugin.version>
     </properties>
 
     <distributionManagement>
