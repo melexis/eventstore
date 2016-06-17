@@ -100,10 +100,10 @@ public class EventDaoCassandraImpl implements EventDao {
     }
 
     private Keyspace connectWithExponentialBackoff(Cluster cluster, String keyspaceName, String columnFamily) {
-        long timeout = 1;
+        long time = 1;
         long millis = 0;
 
-        while (true) {
+        while (time < 15) { // retry 15 times ( e^15 = 3269 sec
             try {
                 Thread.sleep(millis);
 
@@ -118,11 +118,13 @@ public class EventDaoCassandraImpl implements EventDao {
             } catch (InterruptedException e) {
                 throw new RuntimeException("Interrupted while retrying connection to cassandra.", e);
             } catch (Exception e) {
-                timeout++;
-                millis = (long) Math.exp((double) timeout);
+                time++;
+                millis = (long) Math.exp((double) time);
                 log.warn(String.format("Exception while trying to connect to cassandra.  Retrying in %d ms.", millis), e);
             }
         }
+
+        throw new RuntimeException("Giving up after 15 retries");
     }
 
     private void createSchema(Cluster cluster, String keyspace, String columnFamily) {
